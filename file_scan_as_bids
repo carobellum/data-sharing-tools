@@ -1,0 +1,139 @@
+#! /bin/sh
+# setting up file structures BIDS style for BOLD
+# Kate July 2018
+# updated Dec 2018 to include permissions for MPMs by GJC
+# updated July 2020 by CRN to include:
+#   1) sanity checks for functional scan dimensions: wrong volume no raises error
+#   2) moving and renaming of two fieldmap phase images. Previously downloading
+#      data from scanner had resulted in one fieldmap phasediff image, but now
+#      scanner gives out two fieldmap phase images with echo time 1 and 2 (e2).
+#
+####################################################
+
+prog=`basename $0`
+usage="Usage $prog 3digits subj_code anatraw anatnrm restref rest VGref VG NWRref NWR APref AP PAref PA "
+
+#check images to note numbers of invalid/incomplete data files
+#3 digits are the numbers at the end of the W3T_2018_101_??? file name
+#subj_code is the code you have given 501BT eetc
+#anatraw is the first t1 scan i.e. the not normalised one
+#anatnrm is the second t1 scan i.e. the normalised one
+#restref is the reference scan for the resting state 4D file
+#rest is the 4D resting state scan
+#VGref is the reference scan for the verbgen 4D FMRI file
+#VG is the 4D fMRI scan for verb gen task
+#NWRref is the reference scan for the nonword repetition 4D FMRI file
+#NWR is the 4D fMRI scan for nonword repetition task
+#APref is the reference scan for the AP 4D DTI file
+#AP is the 4D DTI file in the AP direction
+#PA ref is the reference scan for the PA 4D DTI file
+#PA is the 4D DTI file in the PA direction (6 vols)
+# put any number e.g. 999 for any missing datasets
+
+
+if [ $# != 14 ]
+then
+echo $usage
+exit 1
+fi
+
+#make folders, change permissions and gzip nii files
+mkdir /vols/Data/devcog/projects/BOLD/sub-${2}
+mv /vols/Data/devcog/projects/BOLD/W3T_2018_101_${1}/* /vols/Data/devcog/projects/BOLD/sub-${2}/
+cd /vols/Data/devcog/projects/BOLD/sub-${2}
+#chgrp -R * devcog_bold
+chmod -R g+rwx *  #GJC added x
+mkdir anat func dwi fmap mpm xjunk
+rm *_localiser_*
+gzip *.nii
+echo 'zipped up'
+
+#rename the files with the subject code
+for f in images_*
+do mv $f `echo $f | sed s/images_/sub-${2}_/g`
+done
+echo 'renamed'
+
+#move the relevant files in the relevant sub directories
+
+mv *mfc* mpm/
+mv *fieldmap*iso* mpm/
+mv *fieldmap_2p4mm* fmap/
+echo 'done mpms and fieldmaps'
+
+
+#renaming the anatomical files
+
+mv *_${3}_*.nii.gz anat/sub-${2}_T1w_raw.nii.gz
+mv *_${4}_*.nii.gz anat/sub-${2}_T1w_nrm.nii.gz
+mv *_${3}_*.json anat/sub-${2}_T1w_raw.json
+mv *_${4}_*.json anat/sub-${2}_T1w_nrm.json
+echo 'done anat'
+
+#renaming the functional files
+#resting state scans
+mv *_${5}_*.nii.gz func/sub-${2}_task-rest_sbref.nii.gz
+mv *_${5}_*.json func/sub-${2}_task-rest_sbref.json
+mv *_${6}_*.nii.gz func/sub-${2}_task-rest_bold.nii.gz
+mv *_${6}_*.json func/sub-${2}_task-rest_bold.json
+# Check dimensions
+dim4=`  fslinfo func/sub-${2}_task-rest_bold.nii.gz | grep "dim4" | awk '{print $2}' | head -n 1 `
+if [ ! ${dim4} == 450 ] ; then echo "Error: Rest scan has ${dim4} volumes when it should have 450"; fi
+
+#verb gen scans
+mv *_${7}_*.nii.gz func/sub-${2}_task-verbgen_sbref.nii.gz
+mv *_${7}_*.json func/sub-${2}_task-verbgen_sbref.json
+mv *_${8}_*.nii.gz func/sub-${2}_task-verbgen_bold.nii.gz
+mv *_${8}_*.json func/sub-${2}_task-verbgen_bold.json
+# Check dimensions
+dim4=`  fslinfo func/sub-${2}_task-verbgen_bold.nii.gz | grep "dim4" | awk '{print $2}' | head -n 1 `
+if [ ! ${dim4} == 325 ] ; then echo "Error: VerbGen scan has ${dim4} volumes when it should have 325"; fi
+
+#nonword repetition scans
+mv *_${9}_*.nii.gz func/sub-${2}_task-nwr_sbref.nii.gz
+mv *_${9}_*.json func/sub-${2}_task-nwr_sbref.json
+mv *_${10}_*.nii.gz func/sub-${2}_task-nwr_bold.nii.gz
+mv *_${10}_*.json func/sub-${2}_task-nwr_bold.json
+# Check dimensions
+dim4=`  fslinfo func/sub-${2}_task-nwr_bold.nii.gz | grep "dim4" | awk '{print $2}' | head -n 1 `
+if [ ! ${dim4} == 625 ] ; then echo "Error: NWR scan has ${dim4} volumes when it should have 625"; fi
+
+echo 'done func'
+
+#renaming the diffusion files
+#AP
+mv *_${11}_*.nii.gz dwi/sub-${2}_acq-AP_sbref.nii.gz
+mv *_${11}_*.json dwi/sub-${2}_acq-AP_sbref.json
+mv *_${12}_*.nii.gz dwi/sub-${2}_acq-AP_dwi.nii.gz
+mv *_${12}_*.json dwi/sub-${2}_acq-AP_dwi.json
+mv *_${12}_*.bval dwi/sub-${2}_acq-AP_dwi.bval
+mv *_${12}_*.bvec dwi/sub-${2}_acq-AP_dwi.bvec
+#PA
+mv *_${13}_*.nii.gz dwi/sub-${2}_acq-PA_sbref.nii.gz
+mv *_${13}_*.json dwi/sub-${2}_acq-PA_sbref.json
+mv *_${14}_*.nii.gz dwi/sub-${2}_acq-PA_dwi.nii.gz
+mv *_${14}_*.json dwi/sub-${2}_acq-PA_dwi.json
+mv *_${14}_*.bval dwi/sub-${2}_acq-PA_dwi.bval
+mv *_${14}_*.bvec dwi/sub-${2}_acq-PA_dwi.bvec
+echo 'done dwi'
+
+
+#renaming the field map files (n.b.: This assumes that there are 2 phase images, not one phase_diff image)
+cd fmap
+mv *e1.nii.gz sub-${2}_magnitude1.nii.gz
+mv *e1.json sub-${2}_magnitude1.json
+mv *e2.nii.gz sub-${2}_magnitude2.nii.gz
+mv *e2.json sub-${2}_magnitude2.json
+mv *e2_ph.nii.gz sub-${2}_phase2.nii.gz
+mv *e2_ph.json sub-${2}_phase2.json
+mv *_ph.nii.gz sub-${2}_phase1.nii.gz
+mv *_ph.json sub-${2}_phase1.json
+cd ..
+echo 'done fieldmaps'
+
+mv *.nii.gz *.json *.bval *.bvec xjunk/
+rmdir /vols/Data/devcog/projects/BOLD/W3T_2018_101_${1}
+echo 'cleaned up'
+
+echo ${2} finished
+echo 'now check the xjunk folder and delete anything you do not need'

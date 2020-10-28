@@ -1,0 +1,64 @@
+#! /bin/bash
+# ------------------------------------------------------------------------------
+# Script name:  find_3d_thresh.sh
+#
+# Description:  Find the appropriate thresholding to reconstruct faces from different input modalities.
+#
+# Author:       Caroline Nettekoven, 2020
+#
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+input_dir=/Users/CN/Documents/Projects/BOLD_study_local/deidentification/example_subject/sub-650BT/
+output_dir=${input_dir}/defaced
+tool_dir=/Users/CN/Documents/Projects/BOLD_study_local/bin/
+py_dir=/Users/CN/Documents/Projects/Joystick_Cereb_MRS/bin/mrsi_code/env/bin
+# ------------------------------------------------------------------------------
+images_to_deface=" anat/sub-650BT_T1w_nrm.nii.gz \
+anat/sub-650BT_T1w_raw.nii.gz \
+dwi/sub-650BT_acq-AP_dwi.nii.gz \
+dwi/sub-650BT_acq-AP_sbref.nii.gz \
+dwi/sub-650BT_acq-PA_dwi.nii.gz \
+dwi/sub-650BT_acq-PA_sbref.nii.gz \
+func/sub-650BT_task-nwr_bold.nii.gz \
+func/sub-650BT_task-nwr_sbref.nii.gz \
+func/sub-650BT_task-rest_bold.nii.gz \
+func/sub-650BT_task-rest_sbref.nii.gz \
+func/sub-650BT_task-verbgen_bold.nii.gz \
+func/sub-650BT_task-verbgen_sbref.nii.gz "
+# ------------------------------------------------------------------------------
+
+for image in ${images_to_deface}; do
+    echo "Generating qc image for ${image}..."
+
+    img=${input_dir}/${image}
+    img_stem=${image#*BT_}
+    img_stem=${img_stem%.nii*}
+
+
+    # Copy and face reconstruct original image:
+    dim=`echo "\`${FSLDIR}/bin/fslval ${img} dim3\` /2" |bc ` ;
+    ${FSLDIR}/bin/fslroi ${img} ${output_dir}/${img_stem}_orig 0 -1 0 -1 ${dim} 1;
+
+    # Set threshold dependent on modality
+    # if [[ ${image:0:3} == "ana"]]; then
+    #     thr=35
+    # elif [[ ${image:0:3} == "fun"]]; then
+    #     thr=55
+    # elif [[ ${image:0:3} == "dwi"]]; then
+    #     thr=55
+    # elif [[ ${image:0:3} == "mpm"]]; then
+    #     thr=55
+    # fi
+
+    for thr in 30 35 40 45 50 55 60 65 70 75 80; do
+    sh ${tool_dir}/fsl_gen_3D_crn_thr \
+                ${img} \
+                ${output_dir}/thresholding/${img_stem}_orig_thr${thr} \
+                ${thr}
+    done
+
+done
+
+# thresholds to get face reconstruction:
+# For functional data: 55
+# For anat data: 35

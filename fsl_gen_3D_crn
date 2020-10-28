@@ -1,0 +1,200 @@
+#!/bin/bash
+
+# Authors: Fidel Alfaro Almagro, Steve Smith and Mark Jenkinson
+# FMRIB, Oxford University
+# 01-Feb-2018
+# Version 1.0.0
+#
+# Changes made by Caroline Nettekoven, August 2020:
+# a) Line 154: The threshold of 55 is too high for my images (bias corrected T1w images). To be able to see the facial features instead of the brain, the value needs to be around 35 for my images.
+# b) Lines 165 & 179: The prefix doesn’t seem to work for me - Fsleyes cannot be called that way for my mac. So I commented out the prefix lines and evaluated them by calling fsleyes render normally.
+# c) Lines XX : Added fslreorient2std. Otherwise images that are not in standard orientation do not show facial features
+#
+#   Part of FSL - FMRIB's Software Library
+#   http://www.fmrib.ox.ac.uk/fsl
+#   fsl@fmrib.ox.ac.uk
+#
+#   Developed at FMRIB (Oxford Centre for Functional Magnetic Resonance
+#   Imaging of the Brain), Department of Clinical Neurology, Oxford
+#   University, Oxford, UK
+#
+#
+#   LICENCE
+#
+#   FMRIB Software Library, Release 6.0 (c) 2018, The University of
+#   Oxford (the "Software")
+#
+#   The Software remains the property of the Oxford University Innovation
+#   ("the University").
+#
+#   The Software is distributed "AS IS" under this Licence solely for
+#   non-commercial use in the hope that it will be useful, but in order
+#   that the University as a charitable foundation protects its assets for
+#   the benefit of its educational and research purposes, the University
+#   makes clear that no condition is made or to be implied, nor is any
+#   warranty given or to be implied, as to the accuracy of the Software,
+#   or that it will be suitable for any particular purpose or for use
+#   under any specific conditions. Furthermore, the University disclaims
+#   all responsibility for the use which is made of the Software. It
+#   further disclaims any liability for the outcomes arising from using
+#   the Software.
+#
+#   The Licensee agrees to indemnify the University and hold the
+#   University harmless from and against any and all claims, damages and
+#   liabilities asserted by third parties (including claims for
+#   negligence) which arise directly or indirectly from the use of the
+#   Software or the sale of any products based on the Software.
+#
+#   No part of the Software may be reproduced, modified, transmitted or
+#   transferred in any form or by any means, electronic or mechanical,
+#   without the express permission of the University. The permission of
+#   the University is not required if the said reproduction, modification,
+#   transmission or transference is done without financial return, the
+#   conditions of this Licence are imposed upon the receiver of the
+#   product, and all original and amended source code is included in any
+#   transmitted product. You may be held legally responsible for any
+#   copyright infringement that is caused or encouraged by your failure to
+#   abide by these terms and conditions.
+#
+#   You are not permitted under this Licence to use this Software
+#   commercially. Use for which any financial return is received shall be
+#   defined as commercial use, and includes (1) integration of all or part
+#   of the source code or the Software into a product for sale or license
+#   by or on behalf of Licensee to third parties or (2) use of the
+#   Software or any derivative of it for research with the final aim of
+#   developing software products for sale or license to a third party or
+#   (3) use of the Software or any derivative of it for research with the
+#   final aim of developing non-software products for sale or license to a
+#   third party, or (4) use of the Software to provide any service to an
+#   external organisation for which payment is received. If you are
+#   interested in using the Software commercially, please contact Oxford
+#   University Innovation ("OUI"), the technology transfer company of the
+#   University, to negotiate a licence. Contact details are:
+#   fsl@innovation.ox.ac.uk quoting Reference Project 9564, FSL.
+export LC_ALL=C
+
+export LC_ALL=C
+
+Usage() {
+    echo ""
+    echo "Usage: `basename $0` <input> <output> "
+    echo ""
+    echo "       Tool to generate a 3D snapshot of a structural image."
+    echo ""
+}
+
+if [ "$1" == "" ] ; then
+    Usage
+    echo ""
+    echo "Error: No input image."
+    echo ""
+    exit 1
+fi
+
+if [ ! -f $1 ] ; then
+    Usage
+    echo ""
+    echo "Error: Input image does not exist."
+    echo ""
+    exit 1
+fi
+
+if [ ! -r $1 ] ; then
+    Usage
+    echo ""
+    echo "Error: Input image is not readable."
+    echo ""
+    exit 1
+fi
+
+if [ `${FSLDIR}/bin/imtest $1` = 0 ] ; then
+    Usage
+    echo ""
+    echo "Error: input image $IN not valid"
+    echo ""
+    exit 1
+fi
+
+if [ "$2" == "" ] ; then
+    Usage
+    echo ""
+    echo "Error: No output image."
+    echo ""
+    exit 1
+fi
+
+if ! [ -x "$(command -v fsleyes)" ] ; then
+    Usage
+    echo ""
+    echo "Error: fslyes is not installed or is not accesible."
+    echo ""
+    exit 1
+fi
+
+
+dirInput=`dirname $1`
+imName=`basename $1 .nii.gz`
+imBaseName=`remove_ext ${imName}`
+output="$2"
+dirOutput=`dirname $2`
+outBaseName=`remove_ext $2`
+
+if [ ! -w ${dirOutput} ] ; then
+    Usage
+    echo "Error: Output directory is not writable."
+    exit 1
+fi
+
+if [ "x${dirInput}" == "x" ] ; then
+    dirInput="."
+fi
+
+tmpName=`tmpnam`
+
+${FSLDIR}/bin/fslmaths $1 -fmedian ${tmpName}.nii.gz ;
+dim=`echo "\`${FSLDIR}/bin/fslval ${tmpName}.nii.gz dim3\` /2" |bc ` ;
+${FSLDIR}/bin/fslroi ${tmpName}.nii.gz ${tmpName}_roi.nii.gz 0 -1 0 -1 ${dim} 1;
+num=`${FSLDIR}/bin/fslstats ${tmpName}_roi.nii.gz -p 35 `;
+${FSLDIR}/bin/fslmaths ${tmpName}.nii.gz -thr ${num} -bin -fillh ${tmpName}.nii.gz ;
+${FSLDIR}/bin/cluster -i ${tmpName}.nii.gz -t 1 -o ${tmpName}_2.nii.gz > /dev/null 2>&1 ;
+clustId=`${FSLDIR}/bin/cluster -i ${tmpName}.nii.gz -t 1 | head -n 2 | tail -n 1 | awk '{print $1}'` ;
+${FSLDIR}/bin/fslmaths ${tmpName}_2.nii.gz -thr ${clustId} -uthr ${clustId} -bin ${outBaseName}.nii.gz ;
+
+prefix=("bash")
+
+#Check if xvfb-run exists in the system.
+if which xvfb-run > /dev/null 2>&1 ; then
+    prefix=("xvfb-run" "-s" "-screen 0 640x480x24")
+fi
+
+# "${prefix[@]}" fsleyes render -of ${outBaseName}_1.png --scene 3d --worldLoc -6.747 36.286 14.021 \
+fsleyes render -of ${outBaseName}_1.png --scene 3d --worldLoc -6.747 36.286 14.021 \
+--displaySpace world --cameraRotation  38.97 -14.11  10.44 \
+--disableLight --lightPos 204.453 289.411 14.0212 \
+--offset 0.0 0.0 --hideCursor \
+--bgColour 0.215 0.525 0.619 \
+--fgColour 1.0 1.0 1.0 --cursorColour 0.0 1.0 0.0 \
+--colourBarLabelSide top-left --performance 3 \
+${outBaseName}.nii.gz  --overlayType volume \
+--alpha 100.0 --brightness 49.5 --contrast 51.5 --cmap greyscale \
+--negativeCmap greyscale --displayRange 0.03 1.0 --clippingRange 0.03 1.0 \
+--cmapResolution 1024 --interpolation spline --interpolateCmaps --numSteps 200 \
+--blendFactor 0.0 --resolution 100 --numInnerSteps 10 --clipMode intersection \
+--volume 0 > /dev/null 2>&1
+
+# "${prefix[@]}"	fsleyes render -of ${outBaseName}_2.png --scene 3d --worldLoc -6.747 36.286 14.021 \
+fsleyes render -of ${outBaseName}_2.png --scene 3d --worldLoc -6.747 36.286 14.021 \
+--displaySpace world --cameraRotation  -38.97 -14.11  0 \
+--disableLight --lightPos 204.453 289.411 14.0212 \
+--offset 0.0 0.0 --hideCursor \
+--bgColour 0.215 0.525 0.619 \
+--fgColour 1.0 1.0 1.0 --cursorColour 0.0 1.0 0.0 \
+--colourBarLabelSide top-left --performance 3 \
+${outBaseName}.nii.gz  --overlayType volume \
+--alpha 100.0 --brightness 49.5 --contrast 51.5 --cmap greyscale \
+--negativeCmap greyscale --displayRange 0.03 1.0 --clippingRange 0.03 1.0 \
+--cmapResolution 1024 --interpolation spline --interpolateCmaps --numSteps 200 \
+--blendFactor 0.0 --resolution 100 --numInnerSteps 10 --clipMode intersection \
+--volume 0 > /dev/null 2>&1
+
+rm ${tmpName}.nii.gz ${tmpName}_2.nii.gz ${outBaseName}.nii.gz

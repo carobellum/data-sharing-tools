@@ -1,0 +1,108 @@
+
+#! /bin/sh
+# ------------------------------------------------------------------------------
+# Script name:  bids_compatibilize_mpm
+#
+# Description:  Script to make mpm scans compatibile with BIDS specification.
+#
+# Author:       Caroline Nettekoven, 2020
+#
+# Steps:        1. Tests if image exists and only continues if unique image exists
+#               2. Copies image over to anat folder & rename
+#               3. Copies json file over to anat folder & rename
+#
+# N.B.:
+# BIDS-standard for quantitative MRI defined according to bids specification in
+# pull request on https://github.com/bids-standard/bids-specification/pull/508
+# (last retrieved on 21.10.2020):
+#         sub-01_MTsat.json
+#         sub-01_MTsat.nii.gz
+#         sub-01_PDmap.json
+#         sub-01_PDmap.nii.gz
+#         sub-01_R1map.json
+#         sub-01_R1map.nii.gz
+#         sub-01_R2starmap.json
+#         sub-01_R2starmap.nii.gz
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+prog=`basename $0`
+usage="Usage $prog subj_code "
+#subj_code is the code you have given, for example "sub-501BT"
+if [ $# != 1 ]
+then
+    echo $usage
+    exit 1
+fi
+# ------------------------------------------------------------------------------
+# Set variable parameters
+subject=$1
+# Set fixed parameters
+BIDSder=/vols/Data/devcog/projects/BOLD/derivatives
+# ------------------------------------------------------------------------------
+# Process images
+# ------- MT -------
+n_mt=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_MT.nii | wc | awk '{print $1}'`
+# MT output image from hMRI toolbox starts with s and ends with _MT
+if [[ ${n_mt} == "1" ]]; then
+    MT_img=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_MT.nii`
+    MT_jsn=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_MT.json`
+    # Copy image
+    # (using fslmaths instead of scp to copy the image also compresses the image to .nii.gz format)
+    fslmaths ${MT_img} ${BIDSder}/${subject}/anat/${subject}_MTsat
+    # Copy json
+    scp ${MT_jsn} ${BIDSder}/${subject}/anat/${subject}_MTsat.json
+else
+    echo "Error. Expected one MT image but found ${n_mt}" 1>&2
+    echo "Skipping MT image and moving on to PD image."
+fi
+
+# ------- PD -------
+# PD output image from hMRI toolbox starts with s and ends with _A
+n_PD=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_A.nii | wc | awk '{print $1}'`
+if [[ ${n_PD} == "1" ]]; then
+    PD_img=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_A.nii`
+    PD_jsn=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_A.json`
+    # Copy image
+    # (using fslmaths instead of scp to copy the image also compresses the image to .nii.gz format)
+    fslmaths ${PD_img} ${BIDSder}/${subject}/anat/${subject}_PDmap
+    # Copy json
+    scp ${PD_jsn} ${BIDSder}/${subject}/anat/${subject}_PDmap.json
+else
+    echo "Error. Expected one PD image but found ${n_PD}" 1>&2
+    echo "Skipping PD image and moving on to R1 image."
+fi
+
+
+# ------- R1 -------
+# R1 output image from hMRI toolbox starts with s and ends with _R1
+n_R1=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_R1.nii | wc | awk '{print $1}'`
+if [[ ${n_R1} == "1" ]]; then
+    R1_img=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_R1.nii`
+    R1_jsn=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_R1.json`
+    # Copy image
+    # (using fslmaths instead of scp to copy the image also compresses the image to .nii.gz format)
+    fslmaths ${R1_img} ${BIDSder}/${subject}/anat/${subject}_R1map
+    # Copy json
+    scp ${R1_jsn} ${BIDSder}/${subject}/anat/${subject}_R1map.json
+else
+    echo "Error. Expected one R1 image but found ${n_R1}" 1>&2
+    echo "Skipping R1 image and moving on to R2s image."
+fi
+
+# ------- R2s -------
+# R2s output image from hMRI toolbox starts with s and ends with _R2s_OLS
+n_R2s=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_R2s_OLS.nii | wc | awk '{print $1}'`
+if [[ ${n_R2s} == "1" ]]; then
+    R2s_img=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_R2s_OLS.nii`
+    R2s_jsn=`ls ${BIDSder}/${subject}/mpm/PSN_results/Results/s*_R2s_OLS.json`
+    # Copy image
+    # (using fslmaths instead of scp to copy the image also compresses the image to .nii.gz format)
+    fslmaths ${R2s_img} ${BIDSder}/${subject}/anat/${subject}_R2starmap
+    # Copy json
+    scp ${R2s_jsn} ${BIDSder}/${subject}/anat/${subject}_R2starmap.json
+else
+    echo "Error. Expected one R2s image but found ${n_R2s}" 1>&2
+    echo "Skipping R2s image."
+fi
+
+echo "Finished."
