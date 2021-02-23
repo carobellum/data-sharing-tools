@@ -39,6 +39,7 @@ It also includes a general outline of steps to go through when sharing your (neu
    - Upload your data to the repository. Consider scripting this to make sure the uploaded data is complete.
 
 # Tools
+Tools are ordered according to their appearance in the data sharing pipeline. Within each section, tools are ordered alphabetically.
 
 ## Cleaning
 ```clean_jsons.py```
