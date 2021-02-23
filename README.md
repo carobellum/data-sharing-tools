@@ -1,4 +1,5 @@
 # Data Sharing Toolbox
+Author: [Caroline Nettekoven](http://caroline-nettekoven.com/), 2020
 This toolbox includes tools created for sharing of MRI and behavioural data as part of my work with Professor Kate Watkins in the Speech &amp; Brain Lab at the University of Oxford.
 
 It also includes a general outline of steps to go through when sharing your (neuroimaging) data.
