@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 # Script name:  deface_test.sh
 #
-# Description:  Test defacing on example subject
+# Description:  Runs three different defacing algorithms on a set of images: pydeface, fsl_deface and mri_deface.
 #
 # Author:       Caroline Nettekoven, 2020
 #

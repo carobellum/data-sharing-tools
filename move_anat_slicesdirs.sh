@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 # Script name:  move_anat_slicesdirs.sh
 #
-# Description:  Move original anats (non-defaced) to seperate folder, to ensure they are not shared
+# Description:  Move anats defacing reports to seperate folder, to ensure they are not shared
 #
 # Author:       Caroline Nettekoven, 2020
 #

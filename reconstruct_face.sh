@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 # Script name:  deface_test.sh
 #
-# Description:  Test defacing on example subject
+# Description:  Reconstruct face on given subject
 #
 # Author:       Caroline Nettekoven, 2020
 #

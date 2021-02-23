@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 # Script name:  inspect_defacing_bold.sh
 #
-# Description:  Test defacing on example subject
+# Description:  Inspect defacing on example subject
 #
 # Author:       Caroline Nettekoven, 2020
 #

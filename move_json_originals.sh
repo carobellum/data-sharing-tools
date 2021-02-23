@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 # Script name:  move_anat_originals.sh
 #
-# Description:  Move original anats (non-defaced) to seperate folder, to ensure they are not shared
+# Description:  Move original json files to seperate folder, to ensure they are not shared
 #
 # Author:       Caroline Nettekoven, 2020
 #
